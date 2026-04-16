@@ -1,0 +1,1 @@
+Frontend Developer with experience building React dashboards, reusable UI components, and REST API integrations. Skilled in JavaScript, TypeScript, CSS, and performance optimization.

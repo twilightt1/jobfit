@@ -1,0 +1,7 @@
+{
+  "resumeId": "frontend_midlevel",
+  "jobId": "react_typescript_mid",
+  "expectedScoreBand": "strong_match",
+  "expectedMatchedSkills": ["react", "typescript", "css", "rest_api"],
+  "expectedMissingSkills": ["graphql", "testing_library", "accessibility"]
+}

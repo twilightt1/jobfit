@@ -1,0 +1,1 @@
+We are looking for a Mid-level Frontend Engineer with strong React, TypeScript, CSS, and REST API experience. Nice to have: GraphQL, React Testing Library, and accessibility experience.
