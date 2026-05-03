@@ -1,6 +1,7 @@
 """Pydantic API schemas."""
 
 from app.schemas.job import JobCreate, JobRead
+from app.schemas.match_report import MatchEvidenceRead, MatchReportCreate, MatchReportRead
 from app.schemas.parsing import (
     AIRunRead,
     JobParseRead,
@@ -17,6 +18,9 @@ __all__ = [
     "JobParseRead",
     "JobParseRequest",
     "JobRead",
+    "MatchEvidenceRead",
+    "MatchReportCreate",
+    "MatchReportRead",
     "ParseDiagnosticsRead",
     "ResumeCreate",
     "ResumeParseRead",
