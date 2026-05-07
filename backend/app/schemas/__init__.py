@@ -2,6 +2,11 @@
 
 from app.schemas.job import JobCreate, JobRead
 from app.schemas.match_report import MatchEvidenceRead, MatchReportCreate, MatchReportRead
+from app.schemas.optimization import (
+    OptimizationCreate,
+    OptimizedResumeRead,
+    RewriteSuggestionRead,
+)
 from app.schemas.parsing import (
     AIRunRead,
     JobParseRead,
@@ -21,9 +26,12 @@ __all__ = [
     "MatchEvidenceRead",
     "MatchReportCreate",
     "MatchReportRead",
+    "OptimizationCreate",
+    "OptimizedResumeRead",
     "ParseDiagnosticsRead",
     "ResumeCreate",
     "ResumeParseRead",
     "ResumeParseRequest",
     "ResumeRead",
+    "RewriteSuggestionRead",
 ]
