@@ -45,3 +45,4 @@ artifacts/demo_screenshots/*
 artifacts/eval_reports/*
 !artifacts/demo_screenshots/.gitkeep
 !artifacts/eval_reports/.gitkeep
+backend/storage/uploads/

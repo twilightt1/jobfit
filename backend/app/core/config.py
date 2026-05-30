@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     )
     embedding_dimension: int = Field(default=384, alias="EMBEDDING_DIMENSION")
 
+    upload_storage_dir: str = Field(default="storage/uploads", alias="UPLOAD_STORAGE_DIR")
+    max_upload_bytes: int = Field(default=10_000_000, alias="MAX_UPLOAD_BYTES")
+    url_fetch_timeout_seconds: float = Field(default=10.0, alias="URL_FETCH_TIMEOUT_SECONDS")
+    max_url_response_bytes: int = Field(default=2_000_000, alias="MAX_URL_RESPONSE_BYTES")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
