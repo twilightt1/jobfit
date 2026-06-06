@@ -6,10 +6,18 @@ from typing import Literal
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.embeddings.factory import get_embedding_client
+from app.ai.embeddings.indexing import (
+    prepare_job_embeddings,
+    prepare_resume_embeddings,
+    replace_job_embeddings,
+    replace_resume_embeddings,
+)
 from app.ai.pipeline import parse_job_record, parse_resume_record
 from app.ai.pipeline.matching import create_match_report_record
 from app.ai.pipeline.optimization import optimize_resume_for_match
-from app.core.config import Settings
+from app.ai.schemas import JobExtraction, ResumeExtraction
+from app.core.config import Settings, get_settings
 from app.db.models.enums import ParseStatus, ResumeSourceType
 from app.db.models.job import Job
 from app.db.models.match_report import MatchReport
@@ -193,6 +201,9 @@ async def run_analysis(
     if job.parse_status != ParseStatus.COMPLETED.value:
         job = await parse_job_record(session, job)
 
+    await ensure_resume_embeddings(session, resume)
+    await ensure_job_embeddings(session, job)
+
     report = await create_match_report_record(session, resume, job)
     loaded_report = await get_match_report(session, report.id)
     if loaded_report is None:
@@ -215,6 +226,38 @@ async def run_analysis(
         match_report=loaded_report,
         optimization=loaded_optimization,
     )
+
+
+async def ensure_resume_embeddings(session: AsyncSession, resume: Resume) -> None:
+    if not resume.parsed_json:
+        raise ValueError("Resume must be parsed before embeddings can be generated.")
+
+    settings = get_settings()
+    embedding_selection = get_embedding_client(settings)
+    resume_extraction = ResumeExtraction.model_validate(resume.parsed_json)
+    embeddings = prepare_resume_embeddings(
+        resume.id,
+        resume_extraction,
+        embedding_selection.client,
+        embedding_version="v1",
+    )
+    await replace_resume_embeddings(session, resume.id, embeddings)
+
+
+async def ensure_job_embeddings(session: AsyncSession, job: Job) -> None:
+    if not job.parsed_json:
+        raise ValueError("Job must be parsed before embeddings can be generated.")
+
+    settings = get_settings()
+    embedding_selection = get_embedding_client(settings)
+    job_extraction = JobExtraction.model_validate(job.parsed_json)
+    embeddings = prepare_job_embeddings(
+        job.id,
+        job_extraction,
+        embedding_selection.client,
+        embedding_version="v1",
+    )
+    await replace_job_embeddings(session, job.id, embeddings)
 
 
 def ingestion_http_error(exc: IngestionError) -> HTTPException:

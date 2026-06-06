@@ -6,7 +6,6 @@ from typing import Any
 from app.ai.languages import canonicalize_supported_languages, detect_supported_languages
 from app.ai.matching.normalization import (
     extract_keywords,
-    normalize_skill,
     normalize_skill_list,
     skill_aliases_for,
 )
@@ -59,6 +58,8 @@ class DeterministicMatchEngine:
         *,
         resume_parse_confidence: float | None = None,
         job_parse_confidence: float | None = None,
+        semantic_skill_matches: dict[str, dict[str, Any]] | None = None,
+        semantic_requirement_matches: dict[str, dict[str, Any]] | None = None,
     ) -> MatchComputationResult:
         normalized_resume_skills = normalize_skill_list(resume.skills)
         normalized_job_skills = normalize_skill_list(
@@ -74,8 +75,13 @@ class DeterministicMatchEngine:
         recommendations: list[str] = []
 
         for skill in normalized_job_skills:
-            matched_text = self._find_skill_match(skill, normalized_resume_skills, experience_texts)
-            if matched_text is None:
+            matched = self._find_skill_match(
+                skill,
+                normalized_resume_skills,
+                experience_texts,
+                semantic_skill_matches or {},
+            )
+            if matched is None:
                 gaps.append(f"Missing explicit support for {skill}.")
                 recommendations.append(
                     f"Add verified resume evidence or measurable impact related to {skill}."
@@ -100,36 +106,40 @@ class DeterministicMatchEngine:
                 )
                 continue
 
-            matched_skill_records.append((skill, matched_text))
+            matched_skill_records.append((skill, matched["text"]))
             strengths.append(f"Resume demonstrates {skill}.")
             evidence.append(
                 MatchEvidenceDraft(
                     requirement_id=f"skill:{skill}",
                     job_requirement_text=skill,
-                    resume_section_id=f"skill:{skill}",
-                    resume_section_type=(
-                        "skill"
-                        if normalize_skill(matched_text) == skill
-                        else "experience"
-                    ),
-                    resume_evidence_text=matched_text,
-                    match_type=self._infer_match_type(skill, matched_text),
+                    resume_section_id=str(matched.get("resume_section_id", f"skill:{skill}")),
+                    resume_section_type=matched["section_type"],
+                    resume_evidence_text=matched["text"],
+                    match_type=matched["match_type"],
                     match_status=MatchStatus.STRONG.value,
-                    similarity_score=1.0 if normalize_skill(matched_text) == skill else 0.84,
-                    confidence=0.82,
-                    explanation=f"Normalized skill match found for {skill}.",
-                    metadata_json={"category": "skill"},
+                    similarity_score=matched["similarity_score"],
+                    confidence=matched["confidence"],
+                    explanation=matched["explanation"],
+                    metadata_json=self._build_evidence_metadata(
+                        "skill", matched.get("metadata_json")
+                    ),
                 )
             )
 
-        requirement_records = self._score_requirements(job.requirements, experience_texts)
+        requirement_records = self._score_requirements(
+            job.requirements,
+            experience_texts,
+            semantic_requirement_matches or {},
+        )
         evidence.extend(requirement_records)
 
         required_languages = self._extract_language_requirements(job)
         resume_languages = canonicalize_supported_languages(resume.languages)
         required_language_keys = {language.casefold() for language in required_languages}
         language_overlap = sorted(
-            language for language in resume_languages if language.casefold() in required_language_keys
+            language
+            for language in resume_languages
+            if language.casefold() in required_language_keys
         )
         language_score = 1.0 if not required_languages else min(
             1.0,
@@ -217,32 +227,111 @@ class DeterministicMatchEngine:
         skill: str,
         normalized_resume_skills: list[str],
         experience_texts: list[str],
-    ) -> str | None:
+        semantic_skill_matches: dict[str, dict[str, Any]],
+    ) -> dict[str, Any] | None:
         if skill in normalized_resume_skills:
-            return skill
+            return {
+                "text": skill,
+                "section_type": "skill",
+                "match_type": MatchType.EXACT.value,
+                "similarity_score": 1.0,
+                "confidence": 0.82,
+                "explanation": f"Normalized skill match found for {skill}.",
+            }
 
         aliases = skill_aliases_for(skill)
         for text in experience_texts:
             keywords = extract_keywords(text)
             if aliases & keywords:
-                return text
+                return {
+                    "text": text,
+                    "section_type": "experience",
+                    "match_type": self._infer_match_type(skill, text),
+                    "similarity_score": 0.84,
+                    "confidence": 0.82,
+                    "explanation": f"Normalized skill match found for {skill}.",
+                }
+
+        semantic_match = semantic_skill_matches.get(skill)
+        if semantic_match is not None:
+            return {
+                "text": str(semantic_match["text"]),
+                "resume_section_id": self._semantic_text_value(
+                    semantic_match, "resume_section_id", f"semantic:{skill}"
+                ),
+                "section_type": self._semantic_text_value(
+                    semantic_match, "resume_section_type", "experience"
+                ),
+                "match_type": str(semantic_match.get("match_type", MatchType.SEMANTIC.value)),
+                "similarity_score": float(semantic_match["score"]),
+                "confidence": round(min(0.95, 0.55 + float(semantic_match["score"]) * 0.4), 2),
+                "explanation": f"Semantic skill match found for {skill}.",
+                "metadata_json": self._semantic_match_metadata(semantic_match),
+            }
         return None
 
     def _score_requirements(
         self,
         requirements: list[JobRequirementItem],
         experience_texts: list[str],
+        semantic_requirement_matches: dict[str, dict[str, Any]],
     ) -> list[MatchEvidenceDraft]:
         requirement_evidence: list[MatchEvidenceDraft] = []
         for index, requirement in enumerate(requirements, start=1):
+            requirement_id = f"req:{index}"
+            semantic_match = semantic_requirement_matches.get(requirement_id)
             matched_text = self._find_requirement_evidence(
                 requirement.requirement,
                 experience_texts,
             )
+            overlap = (
+                self._keyword_overlap(requirement.requirement, matched_text)
+                if matched_text is not None
+                else 0.0
+            )
+
+            if semantic_match is not None:
+                semantic_score = float(semantic_match["score"])
+                should_use_semantic = (
+                    matched_text is None or semantic_score > overlap
+                )
+                if should_use_semantic:
+                    match_type = (
+                        MatchType.HYBRID.value
+                        if matched_text is not None and overlap > 0.0
+                        else str(semantic_match.get("match_type", MatchType.SEMANTIC.value))
+                    )
+                    requirement_evidence.append(
+                        MatchEvidenceDraft(
+                            requirement_id=requirement_id,
+                            job_requirement_text=requirement.requirement,
+                            resume_section_id=self._semantic_text_value(
+                                semantic_match, "resume_section_id", f"exp:{index}"
+                            ),
+                            resume_section_type=self._semantic_text_value(
+                                semantic_match, "resume_section_type", "experience"
+                            ),
+                            resume_evidence_text=str(semantic_match["text"]),
+                            match_type=match_type,
+                            match_status=MatchStatus.STRONG.value,
+                            similarity_score=semantic_score,
+                            confidence=round(min(0.95, 0.55 + semantic_score * 0.4), 2),
+                            explanation=(
+                                "Semantic similarity found between requirement and "
+                                "resume evidence."
+                            ),
+                            metadata_json=self._build_evidence_metadata(
+                                requirement.requirement_type,
+                                self._semantic_match_metadata(semantic_match),
+                            ),
+                        )
+                    )
+                    continue
+
             if matched_text is None:
                 requirement_evidence.append(
                     MatchEvidenceDraft(
-                        requirement_id=f"req:{index}",
+                        requirement_id=requirement_id,
                         job_requirement_text=requirement.requirement,
                         resume_section_id=None,
                         resume_section_type=None,
@@ -257,10 +346,9 @@ class DeterministicMatchEngine:
                 )
                 continue
 
-            overlap = self._keyword_overlap(requirement.requirement, matched_text)
             requirement_evidence.append(
                 MatchEvidenceDraft(
-                    requirement_id=f"req:{index}",
+                    requirement_id=requirement_id,
                     job_requirement_text=requirement.requirement,
                     resume_section_id=f"exp:{index}",
                     resume_section_type="experience",
@@ -279,6 +367,44 @@ class DeterministicMatchEngine:
                 )
             )
         return requirement_evidence
+
+    def _build_evidence_metadata(
+        self,
+        category: str,
+        extra_metadata: object | None = None,
+    ) -> dict[str, Any]:
+        metadata: dict[str, Any] = {"category": category}
+        if isinstance(extra_metadata, dict):
+            metadata.update(extra_metadata)
+        return metadata
+
+    def _semantic_match_metadata(self, semantic_match: dict[str, Any]) -> dict[str, Any]:
+        keys = (
+            "resume_section_id",
+            "resume_section_type",
+            "job_requirement_id",
+            "job_requirement_type",
+            "embedding_model",
+            "embedding_provider",
+            "score_threshold",
+        )
+        semantic_metadata = {
+            key: semantic_match[key]
+            for key in keys
+            if semantic_match.get(key) is not None
+        }
+        return {"semantic": semantic_metadata} if semantic_metadata else {}
+
+    def _semantic_text_value(
+        self,
+        semantic_match: dict[str, Any],
+        key: str,
+        fallback: str,
+    ) -> str:
+        value = semantic_match.get(key)
+        if value is None:
+            return fallback
+        return str(value)
 
     def _find_requirement_evidence(
         self,
