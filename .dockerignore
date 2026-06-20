@@ -1,0 +1,22 @@
+# Ignore environment and local secrets
+.env
+.env.local
+.git
+.github
+*.log
+
+# Ignore node modules and build output
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/tsconfig.tsbuildinfo
+
+# Ignore python cache and venv
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/dist/
+backend/build/
+backend/*.egg-info/

@@ -1,0 +1,160 @@
+{
+  "input_files": {
+    "resume_pdf": "d:\\Coding\\job-matcher\\artifacts\\sample_inputs\\sample_ai_backend_resume.pdf",
+    "job_docx": "d:\\Coding\\job-matcher\\artifacts\\sample_inputs\\sample_llm_platform_jd.docx",
+    "resume_chars": 1872,
+    "job_chars": 1175
+  },
+  "parsing": {
+    "resume_confidence": 0.7,
+    "resume_warnings": [
+      "No explicit skills section detected."
+    ],
+    "job_confidence": 0.54,
+    "job_warnings": [
+      "No explicit required skills section detected.",
+      "No requirement bullets detected."
+    ],
+    "resume": {
+      "candidate_name": "Nguyen Minh An",
+      "headline": "AI Backend Engineer | Ho Chi Minh City, Vietnam",
+      "contact": {
+        "email": "an.nguyen@example.com",
+        "phone": "+84 900 123 456",
+        "location": null,
+        "linkedin": null,
+        "github": null
+      },
+      "summary": "SUMMARY",
+      "total_years_experience": 4.0,
+      "skills": [],
+      "experience_highlights": [
+        "Built schema-first resume and job parsing workflows with Pydantic validation and JSON",
+        "Implemented hybrid semantic and lexical matching using sentence-transformer embeddings",
+        "Designed truth-guard checks to prevent unsupported resume rewrite claims.",
+        "Created evaluation reports for parser quality, semantic matching, and truth-guard",
+        "Maintained CI quality gates with pytest, mypy, ruff, and GitHub Actions.",
+        "Delivered FastAPI and PostgreSQL services for analytics dashboards and internal workflow"
+      ],
+      "education": [
+        {
+          "school": "B.S. Computer Science, University of Technology, Vietnam.",
+          "degree": null,
+          "field_of_study": null
+        }
+      ],
+      "certifications": [],
+      "languages": [
+        "English",
+        "Vietnamese"
+      ]
+    },
+    "job": {
+      "title": "LLM Platform Engineer — TalentGraph AI",
+      "company": null,
+      "location": null,
+      "summary": "About the role",
+      "responsibilities": [
+        "Build FastAPI services for document ingestion, parsing, matching, and report generation.",
+        "Integrate OpenAI-compatible chat completion providers and local fallback clients.",
+        "Design pgvector-backed semantic search and hybrid lexical/semantic scoring pipelines.",
+        "Create evaluation datasets and automated metrics for extraction quality, semantic recall, and guardrail safety.",
+        "Maintain CI quality gates using pytest, mypy, ruff, and GitHub Actions."
+      ],
+      "required_skills": [],
+      "preferred_skills": [],
+      "requirements": [],
+      "seniority": "mid",
+      "employment_type": "full_time",
+      "work_mode": "hybrid"
+    }
+  },
+  "embeddings": {
+    "provider": "deterministic-fallback",
+    "model": "deterministic-token-hash",
+    "warning": "Local embedding runtime unavailable; using deterministic fallback: No module named 'sentence_transformers'",
+    "resume_embedding_count": 7,
+    "job_embedding_count": 5,
+    "semantic_skill_match_count": 0,
+    "semantic_requirement_match_count": 0
+  },
+  "match_report": {
+    "overall_score": 20,
+    "analysis_confidence": 0.79,
+    "breakdown": {
+      "skills": {
+        "score": 0,
+        "matched": [],
+        "missing": []
+      },
+      "requirements": {
+        "score": 0,
+        "evaluated": 0
+      },
+      "experience": {
+        "score": 100,
+        "years": 4.0
+      },
+      "languages": {
+        "score": 100,
+        "matched": []
+      }
+    },
+    "strengths": [],
+    "gaps": [],
+    "recommendations": [],
+    "ats_report": {
+      "keywords_matched": [],
+      "keywords_missing": [],
+      "coverage_ratio": 0.0,
+      "warnings": []
+    },
+    "explanation": {
+      "summary": "This candidate shows a limited deterministic fit. Matched signals include no major required skills; gaps include no critical gaps.",
+      "top_strengths": [],
+      "top_gaps": []
+    },
+    "evidence": []
+  },
+  "optimization": {
+    "version_name": "Targeted resume draft",
+    "summary": "SUMMARY aligned to the LLM Platform Engineer — TalentGraph AI.",
+    "skills": [],
+    "experience_highlights": [
+      "Built schema-first resume and job parsing workflows with Pydantic validation and JSON",
+      "Implemented hybrid semantic and lexical matching using sentence-transformer embeddings",
+      "Designed truth-guard checks to prevent unsupported resume rewrite claims.",
+      "Created evaluation reports for parser quality, semantic matching, and truth-guard",
+      "Maintained CI quality gates with pytest, mypy, ruff, and GitHub Actions.",
+      "Delivered FastAPI and PostgreSQL services for analytics dashboards and internal workflow"
+    ],
+    "suggestions": [
+      {
+        "section_type": "summary",
+        "target_location": "professional_summary",
+        "original_text": "SUMMARY",
+        "suggested_text": "SUMMARY with targeted experience aligned to LLM Platform Engineer — TalentGraph AI, emphasizing relevant backend work.",
+        "targeted_requirements": [],
+        "keywords_added": [],
+        "reason": "Align the opening summary with the target job while reusing verified resume evidence.",
+        "estimated_score_lift": 2,
+        "truth_guard": {
+          "truth_status": "needs_review",
+          "new_claims": [
+            "aligned",
+            "backend",
+            "emphasizing",
+            "engineer",
+            "large language models",
+            "platform",
+            "relevant",
+            "talentgraph"
+          ],
+          "reason": "Suggestion adds wording not directly supported by parsed resume evidence.",
+          "confidence": 0.66
+        }
+      }
+    ],
+    "projected_score": 22
+  }
+}

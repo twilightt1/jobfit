@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://jobfit:jobfit@localhost:5432/jobfit",
         alias="SYNC_DATABASE_URL",
     )
-    backend_cors_origins: list[str] = Field(
+    backend_cors_origins: str | list[str] = Field(
         default_factory=lambda: ["http://localhost:3000"],
         alias="BACKEND_CORS_ORIGINS",
     )
