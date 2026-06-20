@@ -149,6 +149,12 @@ DATABASE_URL=postgresql+asyncpg://jobfit:jobfit@localhost:5432/jobfit
 BACKEND_CORS_ORIGINS=http://localhost:3000
 ```
 
+### Free Deployment
+
+For a free public deployment, use Render for the FastAPI backend/PostgreSQL and Vercel for the Next.js frontend:
+
+- [Free deployment guide](docs/deployment_free.md)
+
 ### Full stack with Docker Compose
 
 ```bash

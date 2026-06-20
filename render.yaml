@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: jobfit-ai-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./infra/docker/backend.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jobfit-ai-db
+          property: connectionString
+      - key: SYNC_DATABASE_URL
+        fromDatabase:
+          name: jobfit-ai-db
+          property: connectionString
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: AI_PROVIDER
+        value: local
+      - key: EMBEDDING_PROVIDER
+        value: local
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      - key: EMBEDDING_DIMENSION
+        value: "384"
+      - key: UPLOAD_STORAGE_DIR
+        value: storage/uploads
+      - key: MAX_UPLOAD_BYTES
+        value: "10000000"
+      - key: URL_FETCH_TIMEOUT_SECONDS
+        value: "10"
+      - key: MAX_URL_RESPONSE_BYTES
+        value: "2000000"
+
+databases:
+  - name: jobfit-ai-db
+    plan: free
+    databaseName: jobfit
+    user: jobfit
