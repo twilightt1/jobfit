@@ -260,7 +260,7 @@ def test_cohere_embedding_client_posts_to_v2_embed(monkeypatch: Any) -> None:
         def __init__(self, *, timeout: float) -> None:
             calls.append({"timeout": timeout})
 
-        def __enter__(self) -> "FakeClient":
+        def __enter__(self) -> FakeClient:
             return self
 
         def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
@@ -346,7 +346,7 @@ def test_jina_embedding_client_posts_to_embeddings_endpoint(monkeypatch: Any) ->
         def __init__(self, *, timeout: float) -> None:
             calls.append({"timeout": timeout})
 
-        def __enter__(self) -> "FakeClient":
+        def __enter__(self) -> FakeClient:
             return self
 
         def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
